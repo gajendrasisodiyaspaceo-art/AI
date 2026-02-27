@@ -1,0 +1,31 @@
+import { memo } from 'react'
+import { Card, StatusDot } from '../../common'
+import type { AIProvider } from '../../../types'
+
+interface AIStatusCardProps {
+  aiStatus: 'connected' | 'disconnected' | 'checking'
+  provider: AIProvider
+}
+
+const statusMap = {
+  connected: { dot: 'success' as const, label: 'AI Connected' },
+  disconnected: { dot: 'error' as const, label: 'Not Connected' },
+  checking: { dot: 'warning' as const, label: 'Checking...' },
+}
+
+export default memo(function AIStatusCard({ aiStatus, provider }: AIStatusCardProps) {
+  const { dot, label } = statusMap[aiStatus]
+  const providerLabel = provider === 'groq' ? 'Using Groq Cloud' : 'Using Ollama Local'
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2.5">
+        <StatusDot status={dot} size="md" pulse={aiStatus === 'checking'} />
+        <div>
+          <span className="text-sm font-medium text-white/90">{label}</span>
+          <p className="text-xs text-slate-400 mt-0.5">{providerLabel}</p>
+        </div>
+      </div>
+    </Card>
+  )
+})

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-electron/
+
+# Environment
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Release binaries
+release/
+
+# Swarm data
+.swarm/
+
+# Claude
+.claude/
+.claude-flow/daemon.pid
+.claude-flow/daemon-state.json

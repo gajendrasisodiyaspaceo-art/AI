@@ -1,0 +1,36 @@
+appId: com.interviewai.app
+productName: InterviewAI
+directories:
+  buildResources: build
+  output: release
+files:
+  - dist-electron
+  - dist
+mac:
+  target:
+    - dmg
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  hardenedRuntime: true
+  extendInfo:
+    NSScreenCaptureUsageDescription: "InterviewAI needs screen recording access to capture your screen for OCR processing."
+win:
+  target:
+    - target: zip
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  target:
+    - target: deb
+      arch:
+        - x64
+    - target: tar.gz
+      arch:
+        - x64
+  category: Utility

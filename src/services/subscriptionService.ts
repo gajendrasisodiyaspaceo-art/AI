@@ -2,78 +2,90 @@ import { supabase } from './supabaseClient'
 import type { UserSubscription, DailyUsage } from '../types'
 
 export async function getSubscription(): Promise<UserSubscription> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { plan: 'free', status: 'active', currentPeriodEnd: null, cancelAtPeriodEnd: false }
+    }
+
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('plan, status, current_period_end, cancel_at_period_end')
+      .eq('user_id', user.id)
+      .single()
+
+    if (error || !data) {
+      return { plan: 'free', status: 'active', currentPeriodEnd: null, cancelAtPeriodEnd: false }
+    }
+
+    return {
+      plan: data.plan,
+      status: data.status,
+      currentPeriodEnd: data.current_period_end,
+      cancelAtPeriodEnd: data.cancel_at_period_end,
+    }
+  } catch {
     return { plan: 'free', status: 'active', currentPeriodEnd: null, cancelAtPeriodEnd: false }
-  }
-
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select('plan, status, current_period_end, cancel_at_period_end')
-    .eq('user_id', user.id)
-    .single()
-
-  if (error || !data) {
-    return { plan: 'free', status: 'active', currentPeriodEnd: null, cancelAtPeriodEnd: false }
-  }
-
-  return {
-    plan: data.plan,
-    status: data.status,
-    currentPeriodEnd: data.current_period_end,
-    cancelAtPeriodEnd: data.cancel_at_period_end,
   }
 }
 
 export async function getDailyUsage(): Promise<DailyUsage> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { questionCount: 0, date: new Date().toISOString().split('T')[0] }
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data, error } = await supabase
+      .from('daily_usage')
+      .select('question_count, date')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single()
+
+    if (error || !data) {
+      return { questionCount: 0, date: today }
+    }
+
+    return { questionCount: data.question_count, date: data.date }
+  } catch {
     return { questionCount: 0, date: new Date().toISOString().split('T')[0] }
   }
-
-  const today = new Date().toISOString().split('T')[0]
-
-  const { data, error } = await supabase
-    .from('daily_usage')
-    .select('question_count, date')
-    .eq('user_id', user.id)
-    .eq('date', today)
-    .single()
-
-  if (error || !data) {
-    return { questionCount: 0, date: today }
-  }
-
-  return { questionCount: data.question_count, date: data.date }
 }
 
 export async function incrementQuestionCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return 0
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 0
 
-  const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
 
-  const { data: existing } = await supabase
-    .from('daily_usage')
-    .select('id, question_count')
-    .eq('user_id', user.id)
-    .eq('date', today)
-    .single()
+    const { data: existing } = await supabase
+      .from('daily_usage')
+      .select('id, question_count')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single()
 
-  if (existing) {
-    const newCount = existing.question_count + 1
+    if (existing) {
+      const newCount = existing.question_count + 1
+      await supabase
+        .from('daily_usage')
+        .update({ question_count: newCount })
+        .eq('id', existing.id)
+      return newCount
+    }
+
     await supabase
       .from('daily_usage')
-      .update({ question_count: newCount })
-      .eq('id', existing.id)
-    return newCount
+      .insert({ user_id: user.id, date: today, question_count: 1 })
+
+    return 1
+  } catch {
+    return 0
   }
-
-  await supabase
-    .from('daily_usage')
-    .insert({ user_id: user.id, date: today, question_count: 1 })
-
-  return 1
 }
 
 export async function createCheckoutSession(): Promise<string> {
@@ -120,16 +132,20 @@ export async function createCheckoutSession(): Promise<string> {
   }
 }
 
-export async function validateSubscription(): Promise<{ plan: string; status: string; valid: boolean } | null> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
+export async function validateSubscription(): Promise<{ plan: string; status: string; valid: boolean; cancelAtPeriodEnd?: boolean } | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return null
 
-  const { data, error } = await supabase.functions.invoke('validate-subscription', {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  })
+    const { data, error } = await supabase.functions.invoke('validate-subscription', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
 
-  if (error || !data) return null
-  return data
+    if (error || !data) return null
+    return data
+  } catch {
+    return null
+  }
 }
 
 export async function createPortalSession(): Promise<string> {
@@ -146,7 +162,22 @@ export async function createPortalSession(): Promise<string> {
 
     if (error) {
       console.error('[Portal] Edge function error:', error)
-      throw new Error('Failed to open subscription portal')
+      // Extract detailed error from response body
+      let detail = ''
+      try {
+        const ctx = (error as { context?: { json?: () => Promise<unknown> } }).context
+        if (ctx?.json) {
+          const body = await ctx.json() as { error?: string }
+          detail = body?.error || ''
+        }
+      } catch { /* ignore parse errors */ }
+      console.error('[Portal] Error detail:', detail)
+      throw new Error(detail || error.message || 'Failed to open subscription portal')
+    }
+
+    if (data?.error) {
+      console.error('[Portal] Edge function returned error:', data.error)
+      throw new Error(data.error)
     }
 
     if (!data?.url) {

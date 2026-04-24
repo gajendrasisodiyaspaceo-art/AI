@@ -22,17 +22,17 @@ export default memo(function Select({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="text-xs font-medium text-white/35 uppercase tracking-wider px-0.5">
+        <label className="text-[10px] font-medium text-[#6B6B70] uppercase tracking-[1px] px-0.5">
           {label}
         </label>
       )}
       <select
         className={`
-          w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5
-          text-sm text-white/90 outline-none focus:border-violet-500/40
-          transition-colors cursor-pointer h-10
+          w-full rounded-lg px-3.5 text-[13px] text-white outline-none
+          focus:border-[#8B5CF6]/40 transition-colors cursor-pointer h-11
           ${className}
         `.trim().replace(/\s+/g, ' ')}
+        style={{ background: 'var(--bg-sidebar)', border: '1px solid var(--border-glass)' }}
         {...rest}
       >
         {options.map((opt) => (
@@ -42,7 +42,7 @@ export default memo(function Select({
         ))}
       </select>
       {helperText && (
-        <p className="text-xs text-white/30 px-0.5">{helperText}</p>
+        <p className="text-[11px] text-[#6B6B70] px-0.5">{helperText}</p>
       )}
     </div>
   )

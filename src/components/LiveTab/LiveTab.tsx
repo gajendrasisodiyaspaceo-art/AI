@@ -5,6 +5,7 @@ import InputArea from './InputArea'
 
 interface LiveTabProps {
   onLatestAnswer?: (answer: string) => void
+  onGoToSettings?: () => void
   subscription: {
     isPro: boolean
     questionsRemaining: number
@@ -16,7 +17,7 @@ interface LiveTabProps {
   }
 }
 
-export default function LiveTab({ onLatestAnswer, subscription }: LiveTabProps) {
+export default function LiveTab({ onLatestAnswer, onGoToSettings, subscription }: LiveTabProps) {
   const {
     qaPairs,
     manualInput,
@@ -27,6 +28,7 @@ export default function LiveTab({ onLatestAnswer, subscription }: LiveTabProps) 
     isCapturing,
     screenCaptureError,
     transcriptionError,
+    configError,
     chatEndRef,
     setManualInput,
     toggleListening,
@@ -38,7 +40,6 @@ export default function LiveTab({ onLatestAnswer, subscription }: LiveTabProps) 
   } = useLiveChat({
     onLatestAnswer,
     trackQuestion: subscription.trackQuestion,
-    canAskQuestion: subscription.canAskQuestion,
   })
 
   return (
@@ -74,6 +75,8 @@ export default function LiveTab({ onLatestAnswer, subscription }: LiveTabProps) 
         isPro={subscription.isPro}
         onUpgrade={subscription.openCheckout}
         checkoutError={subscription.error}
+        configError={configError}
+        onGoToSettings={onGoToSettings}
       />
     </div>
   )

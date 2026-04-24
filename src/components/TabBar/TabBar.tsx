@@ -41,24 +41,31 @@ const tabs = [
 
 export default memo(function TabBar({ activeTab, onTabChange }: TabBarProps) {
   return (
-    <div className="flex items-center h-10 bg-[rgba(255,255,255,0.02)]">
+    <div
+      className="flex items-center h-11 flex-shrink-0"
+      style={{ borderBottom: '1px solid var(--border-glass)', paddingLeft: '4px', paddingRight: '4px' }}
+    >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`relative flex-1 flex items-center justify-center gap-1.5 h-full px-3 text-xs font-medium transition-all duration-200 ${
+            className={`relative flex-1 flex items-center justify-center gap-2 h-full text-[13px] font-medium transition-all duration-200 ${
               isActive
                 ? 'text-white'
-                : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03]'
+                : 'text-[#6B6B70] hover:text-[#ADADB0]'
             }`}
           >
-            <span className={isActive ? 'text-violet-400' : 'text-white/30'}>{tab.icon}</span>
-            {tab.label}
-            {/* Active bottom border highlight */}
+            <span className={`flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-[#8B5CF6]' : ''}`}>
+              {tab.icon}
+            </span>
+            <span>{tab.label}</span>
             {isActive && (
-              <span className="absolute bottom-0 left-3 right-3 h-[2.5px] rounded-full bg-gradient-to-r from-violet-400 to-indigo-500 shadow-sm shadow-violet-500/30" />
+              <span
+                className="absolute bottom-0 h-[2px] rounded-full"
+                style={{ left: '20%', right: '20%', background: 'var(--accent)' }}
+              />
             )}
           </button>
         )

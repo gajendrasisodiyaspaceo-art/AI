@@ -17,14 +17,15 @@ export function useSubscription() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const plan = subscription.plan
-  const limits = PLAN_LIMITS[plan]
+  // isPro must check both plan AND status — expired/canceled subscriptions are not Pro
+  const isPro = plan === 'pro' && subscription.status === 'active'
+  const limits = PLAN_LIMITS[isPro ? 'pro' : 'free']
   const questionsRemaining = limits.dailyQuestions === Infinity
     ? Infinity
     : Math.max(0, limits.dailyQuestions - usage.questionCount)
   const canAskQuestion = questionsRemaining > 0
   const canScreenCapture = limits.screenCaptureEnabled
   const canOCR = limits.ocrEnabled
-  const isPro = plan === 'pro'
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -48,19 +49,24 @@ export function useSubscription() {
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*',
             schema: 'public',
             table: 'subscriptions',
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            const row = payload.new as Record<string, unknown>
-            setSubscription({
-              plan: row.plan as 'free' | 'pro',
-              status: row.status as 'active' | 'canceled' | 'past_due' | 'expired',
-              currentPeriodEnd: row.current_period_end as string | null,
-              cancelAtPeriodEnd: row.cancel_at_period_end as boolean,
-            })
+            const row = (payload.new ?? payload.old) as Record<string, unknown> | null
+            if (row && row.plan) {
+              setSubscription({
+                plan: row.plan as 'free' | 'pro',
+                status: row.status as 'active' | 'canceled' | 'past_due' | 'expired',
+                currentPeriodEnd: row.current_period_end as string | null,
+                cancelAtPeriodEnd: row.cancel_at_period_end as boolean,
+              })
+            } else {
+              // Row deleted — reset to free
+              setSubscription({ plan: 'free', status: 'active', currentPeriodEnd: null, cancelAtPeriodEnd: false })
+            }
           }
         )
         .subscribe()
@@ -68,6 +74,20 @@ export function useSubscription() {
 
     return () => {
       if (channel) supabase.removeChannel(channel)
+    }
+  }, [refresh])
+
+  // Refresh subscription when window regains focus (user returning from Stripe portal)
+  useEffect(() => {
+    const handleFocus = () => { refresh() }
+    const handleVisibility = () => { if (document.visibilityState === 'visible') refresh() }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [refresh])
 
@@ -90,14 +110,25 @@ export function useSubscription() {
       if (result && !result.valid) {
         // Stripe says subscription is no longer active — refresh from DB
         refresh()
+      } else if (result && result.valid) {
+        // Sync cancelAtPeriodEnd from Stripe (catches portal cancellations)
+        if (result.cancelAtPeriodEnd !== undefined) {
+          setSubscription(prev => {
+            const cancel = result.cancelAtPeriodEnd ?? false
+            if (prev.cancelAtPeriodEnd !== cancel) {
+              return { ...prev, cancelAtPeriodEnd: cancel }
+            }
+            return prev
+          })
+        }
       }
     }
 
     // Validate on mount for Pro users
     validate()
 
-    // Re-validate every 5 minutes
-    const interval = setInterval(validate, 5 * 60 * 1000)
+    // Re-validate every 2 minutes (was 5, faster for portal changes)
+    const interval = setInterval(validate, 2 * 60 * 1000)
 
     return () => {
       cancelled = true
@@ -168,11 +199,40 @@ export function useSubscription() {
     try {
       const url = await createPortalSession()
       window.electronAPI.openExternal(url)
+
+      // Start polling to catch subscription changes made in the portal
+      // (cancellation, plan change, etc.) as fallback for Realtime
+      if (!pollingRef.current) {
+        const previousSub = { ...subscription }
+        pollingRef.current = setInterval(async () => {
+          const sub = await getSubscription()
+          // If anything changed, update state
+          if (
+            sub.plan !== previousSub.plan ||
+            sub.status !== previousSub.status ||
+            sub.cancelAtPeriodEnd !== previousSub.cancelAtPeriodEnd
+          ) {
+            setSubscription(sub)
+            if (pollingRef.current) {
+              clearInterval(pollingRef.current)
+              pollingRef.current = null
+            }
+          }
+        }, 3000)
+
+        // Stop polling after 5 minutes max
+        setTimeout(() => {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+            pollingRef.current = null
+          }
+        }, 5 * 60 * 1000)
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to open subscription portal'
       setError(message)
     }
-  }, [])
+  }, [subscription])
 
   return {
     subscription,

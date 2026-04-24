@@ -1,6 +1,10 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, desktopCapturer, dialog, screen, systemPreferences, shell } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, desktopCapturer, dialog, screen, systemPreferences, shell, session } from 'electron'
 import path from 'path'
 import fs from 'fs'
+
+// Allow WebSpeech API to access audio in Electron's renderer
+app.commandLine.appendSwitch('enable-features', 'WebSpeechAPI')
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 // Simple JSON file store (replaces electron-store which is ESM-only)
 class JsonStore {
@@ -324,6 +328,32 @@ function registerIPC() {
   })
 }
 
+async function requestPermissionsOnStartup() {
+  if (process.platform !== 'darwin') return
+
+  // Microphone — ask immediately if not granted
+  const micStatus = systemPreferences.getMediaAccessStatus('microphone')
+  if (micStatus === 'not-determined') {
+    await systemPreferences.askForMediaAccess('microphone')
+  }
+
+  // Camera (needed for some Electron internals with WebSpeech)
+  const camStatus = systemPreferences.getMediaAccessStatus('camera')
+  if (camStatus === 'not-determined') {
+    await systemPreferences.askForMediaAccess('camera')
+  }
+
+  // Screen recording — trigger the permission prompt by attempting a capture
+  const screenStatus = systemPreferences.getMediaAccessStatus('screen')
+  if (screenStatus === 'not-determined' || screenStatus === 'denied') {
+    // Attempting getSources triggers macOS to show the Screen Recording prompt
+    desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1, height: 1 },
+    }).catch(() => {})
+  }
+}
+
 app.whenReady().then(() => {
   store = new JsonStore({
     settings: {
@@ -342,9 +372,24 @@ app.whenReady().then(() => {
     sessions: [],
   })
 
+  // Grant microphone + screen permissions so WebSpeech API works in Electron
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = ['media', 'microphone', 'audioCapture', 'screen']
+    callback(allowed.includes(permission))
+  })
+
+  // Also handle permission checks (for already-granted permissions)
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    const allowed = ['media', 'microphone', 'audioCapture', 'screen']
+    return allowed.includes(permission)
+  })
+
   createWindow()
   registerShortcuts()
   registerIPC()
+
+  // Request OS-level permissions on startup so they're ready before the user needs them
+  requestPermissionsOnStartup()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

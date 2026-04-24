@@ -20,7 +20,7 @@ function formatTime(timestamp: number): string {
 // AI avatar icon
 function AIAvatar() {
   return (
-    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-600/20">
+    <div className="w-7 h-7 rounded-full bg-[#8B5CF6] flex items-center justify-center flex-shrink-0">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
         <path d="M12 2L2 7l10 5 10-5-10-5Z" />
         <path d="M2 17l10 5 10-5" />
@@ -33,8 +33,8 @@ function AIAvatar() {
 // User avatar icon
 function UserAvatar() {
   return (
-    <div className="w-7 h-7 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round">
+    <div className="w-7 h-7 rounded-full bg-[#1F1F23] border border-[#2A2A2E] flex items-center justify-center flex-shrink-0">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ADADB0" strokeWidth="2" strokeLinecap="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
         <circle cx="12" cy="7" r="4" />
       </svg>
@@ -49,12 +49,12 @@ export default memo(function ChatMessage({ pair, copiedId, onCopy, onRegenerate 
       <div className="flex items-end gap-2 justify-end">
         <div className="max-w-[85%]">
           <div
-            className="bg-gradient-to-br from-violet-600 to-violet-700 text-white rounded-2xl rounded-br-md px-4 py-3 text-sm shadow-sm shadow-violet-600/10"
+            className="bg-[#8B5CF6] text-white rounded-2xl rounded-br-md px-4 py-3 text-[13px]"
           >
             <p className="leading-relaxed">{pair.question}</p>
           </div>
           <div className="flex justify-end mt-1 pr-1">
-            <span className="text-[11px] text-white/35">{formatTime(pair.timestamp)}</span>
+            <span className="text-[11px] text-[#4A4A4E]">{formatTime(pair.timestamp)}</span>
           </div>
         </div>
         <UserAvatar />
@@ -65,8 +65,8 @@ export default memo(function ChatMessage({ pair, copiedId, onCopy, onRegenerate 
         <AIAvatar />
         <div className="max-w-[85%]">
           <div
-            className="rounded-2xl rounded-bl-md px-4 py-3 text-sm text-white/90 border border-white/[0.08]"
-            style={{ background: 'rgba(30, 30, 46, 0.9)' }}
+            className="rounded-2xl rounded-bl-md px-4 py-3 text-[13px] text-[#ADADB0] border border-[#2A2A2E]"
+            style={{ background: '#1F1F23' }}
           >
             {pair.isStreaming && !pair.answer ? (
               <TypingIndicator />
@@ -87,12 +87,12 @@ export default memo(function ChatMessage({ pair, copiedId, onCopy, onRegenerate 
           </div>
           {/* Timestamp + action buttons (hover only) */}
           <div className="flex items-center gap-2 mt-1 pl-1">
-            <span className="text-[11px] text-white/35">{formatTime(pair.timestamp)}</span>
+            <span className="text-[11px] text-[#4A4A4E]">{formatTime(pair.timestamp)}</span>
             {!pair.isStreaming && pair.answer && !pair.answer.startsWith('Error:') && (
               <div className="chat-actions flex items-center gap-0.5">
                 <button
                   onClick={() => onCopy(pair)}
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-violet-400 hover:bg-violet-500/10"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-[#6B6B70] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
                   title="Copy answer"
                 >
                   {copiedId === pair.id ? (
@@ -108,7 +108,7 @@ export default memo(function ChatMessage({ pair, copiedId, onCopy, onRegenerate 
                 </button>
                 <button
                   onClick={() => onRegenerate(pair)}
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-violet-400 hover:bg-violet-500/10"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-[#6B6B70] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
                   title="Regenerate answer"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

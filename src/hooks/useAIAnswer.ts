@@ -47,6 +47,11 @@ export function useAIAnswer(): UseAIAnswerReturn {
         const settings = await window.electronAPI.getSettings()
         settingsRef.current = settings
 
+        // Pre-flight: check API key is configured
+        if ((settings.aiProvider || 'groq') === 'groq' && !settings.groqApiKey) {
+          throw new Error('Groq API key not configured. Go to Settings to add your API key.')
+        }
+
         const stream = generateAnswer(
           question,
           context,

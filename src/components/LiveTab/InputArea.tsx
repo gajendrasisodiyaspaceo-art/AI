@@ -6,8 +6,8 @@ interface InputAreaProps {
   onSubmit: () => void
   onKeyDown: (e: React.KeyboardEvent) => void
   onScreenCapture: () => void
-  onToggleListening: () => void
-  isActive: boolean
+  onToggleListening?: () => void
+  isActive?: boolean
   isCapturing?: boolean
   screenCaptureError?: string | null
   transcriptionError?: string | null
@@ -17,21 +17,8 @@ interface InputAreaProps {
   isPro?: boolean
   onUpgrade?: () => void
   checkoutError?: string | null
-}
-
-// Mic wave animation bars
-function MicWave() {
-  return (
-    <div className="flex items-center gap-[3px] h-4">
-      {[...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          className="mic-wave-bar w-[3px] h-full rounded-full bg-white/80"
-          style={{ transformOrigin: 'center' }}
-        />
-      ))}
-    </div>
-  )
+  configError?: string | null
+  onGoToSettings?: () => void
 }
 
 export default memo(function InputArea({
@@ -41,7 +28,7 @@ export default memo(function InputArea({
   onKeyDown,
   onScreenCapture,
   onToggleListening,
-  isActive,
+  isActive = false,
   isCapturing = false,
   screenCaptureError = null,
   transcriptionError = null,
@@ -51,11 +38,26 @@ export default memo(function InputArea({
   isPro,
   onUpgrade,
   checkoutError,
+  configError = null,
+  onGoToSettings,
 }: InputAreaProps) {
+
   return (
-    <div className="p-3 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+    <div
+      className="flex-shrink-0"
+      style={{
+        paddingTop: '12px',
+        paddingLeft: 'var(--sp-page)',
+        paddingRight: 'var(--sp-page)',
+        paddingBottom: 'var(--sp-page)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+      }}
+    >
+      {/* Error banners */}
       {screenCaptureError && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+        <div className="flex items-center gap-2 rounded-lg text-red-400 text-xs" style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
@@ -65,17 +67,43 @@ export default memo(function InputArea({
         </div>
       )}
       {transcriptionError && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+        <div className="flex items-center gap-2 rounded-lg text-red-400 text-xs" style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span>{transcriptionError}</span>
+          <span className="flex-1">{transcriptionError}</span>
+          {transcriptionError.includes('Settings') && onGoToSettings && (
+            <button
+              onClick={onGoToSettings}
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors flex-shrink-0"
+            >
+              Open Settings
+            </button>
+          )}
+        </div>
+      )}
+      {configError && (
+        <div className="flex items-center gap-2 rounded-lg text-amber-400 text-xs" style={{ padding: '8px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span className="flex-1">{configError}</span>
+          {onGoToSettings && (
+            <button
+              onClick={onGoToSettings}
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors flex-shrink-0"
+            >
+              Open Settings
+            </button>
+          )}
         </div>
       )}
       {checkoutError && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+        <div className="flex items-center gap-2 rounded-lg text-red-400 text-xs" style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
@@ -85,7 +113,7 @@ export default memo(function InputArea({
         </div>
       )}
       {canAskQuestion === false && (
-        <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+        <div className="flex items-center justify-between rounded-lg" style={{ padding: '10px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
           <span className="text-xs text-amber-400 font-medium">Daily limit reached</span>
           <button
             onClick={onUpgrade}
@@ -96,12 +124,14 @@ export default memo(function InputArea({
         </div>
       )}
 
-      {/* Input container with glass effect */}
+      {/* Input container */}
       <div
-        className="flex items-center gap-1.5 rounded-2xl px-1.5 py-1.5 border transition-all duration-200"
+        className="input-row flex items-center rounded-xl border"
         style={{
-          background: 'rgba(26, 26, 46, 0.8)',
-          borderColor: manualInput.trim() ? 'rgba(124, 58, 237, 0.4)' : 'rgba(255,255,255,0.08)',
+          height: '44px',
+          padding: '0 4px 0 8px',
+          background: 'var(--bg-sidebar)',
+          borderColor: isActive ? 'rgba(139,92,246,0.5)' : manualInput.trim() ? 'var(--border-active)' : 'var(--border-glass)',
         }}
       >
         {/* Screen capture button */}
@@ -109,32 +139,56 @@ export default memo(function InputArea({
           <button
             onClick={onScreenCapture}
             disabled={isCapturing || canScreenCapture === false}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
               canScreenCapture === false
-                ? 'text-white/15 cursor-not-allowed'
+                ? 'text-[#4A4A4E] cursor-not-allowed'
                 : isCapturing
-                  ? 'text-violet-400 animate-pulse cursor-wait'
-                  : 'text-white/30 hover:text-violet-400 hover:bg-violet-500/10'
+                  ? 'text-[#8B5CF6] animate-pulse cursor-wait'
+                  : 'text-[#4A4A4E] hover:text-[#6B6B70] hover:bg-white/[0.04]'
             }`}
             title={canScreenCapture === false ? 'Pro feature' : isCapturing ? 'Capturing...' : 'Capture Screen'}
           >
             {isCapturing ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
             )}
           </button>
           {canScreenCapture === false && (
-            <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded text-[8px] font-bold leading-none bg-violet-600 text-white">
+            <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded text-[8px] font-bold leading-none bg-[#8B5CF6] text-white">
               PRO
             </span>
           )}
         </div>
+
+        {/* Mic button */}
+        {onToggleListening && (
+          <button
+            onClick={onToggleListening}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0 ${
+              isActive
+                ? 'text-[#8B5CF6]'
+                : 'text-[#4A4A4E] hover:text-[#6B6B70] hover:bg-white/[0.04]'
+            }`}
+            style={isActive ? {
+              background: 'rgba(139,92,246,0.15)',
+              boxShadow: '0 0 12px rgba(139,92,246,0.3)',
+              animation: 'pulse-glow 2s infinite',
+            } : undefined}
+            title={isActive ? 'Stop listening' : 'Start listening'}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive ? '2.2' : '1.8'}>
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              {!isActive && <line x1="12" y1="19" x2="12" y2="22" />}
+            </svg>
+          </button>
+        )}
 
         {/* Text input */}
         <input
@@ -142,22 +196,24 @@ export default memo(function InputArea({
           value={manualInput}
           onChange={e => onManualInputChange(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Type a question..."
-          className="flex-1 min-w-0 bg-transparent py-2 text-sm text-white placeholder-white/25 outline-none"
+          placeholder={isActive ? 'Listening...' : 'Type a question...'}
+          className="flex-1 min-w-0 bg-transparent text-[13px] text-white placeholder-[#4A4A4E] outline-none"
+          style={{ height: '100%', padding: '0 8px' }}
         />
 
         {/* Ask button */}
         <button
           onClick={onSubmit}
           disabled={!manualInput.trim()}
-          className={`h-9 px-4 flex items-center gap-1.5 rounded-xl text-sm font-medium transition-all duration-200 flex-shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-all duration-200 flex-shrink-0 ${
             manualInput.trim()
-              ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm shadow-violet-600/25 active:scale-95'
-              : 'bg-white/[0.04] text-white/20 cursor-not-allowed'
+              ? 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white active:scale-95'
+              : 'bg-white/[0.06] text-white/30 cursor-not-allowed'
           }`}
+          style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
         >
           Ask
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="5" y1="12" x2="19" y2="12" />
             <polyline points="12 5 19 12 12 19" />
           </svg>
@@ -165,38 +221,13 @@ export default memo(function InputArea({
       </div>
 
       {isPro === false && questionsRemaining !== undefined && (
-        <div className="text-center">
-          <span className="text-xs text-white/25">
+        <div className="text-center" style={{ marginTop: '-4px', marginBottom: '-4px' }}>
+          <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
             {questionsRemaining === 0 ? 'No questions remaining today' : `${questionsRemaining}/10 questions remaining today`}
           </span>
         </div>
       )}
 
-      {/* Listen button */}
-      <button
-        onClick={onToggleListening}
-        className={`w-full h-[52px] flex items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 ${
-          isActive
-            ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md shadow-red-500/25'
-            : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-600/30 hover:shadow-xl hover:shadow-violet-600/35 hover:scale-[1.01] active:scale-[0.99]'
-        }`}
-        style={isActive ? { animation: 'pulse-red 2s infinite' } : undefined}
-      >
-        {isActive ? (
-          <>
-            <MicWave />
-            <span>Stop Listening</span>
-          </>
-        ) : (
-          <>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            </svg>
-            <span>Start Listening</span>
-          </>
-        )}
-      </button>
     </div>
   )
 })

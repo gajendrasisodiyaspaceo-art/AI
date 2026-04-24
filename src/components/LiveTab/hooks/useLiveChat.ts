@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useTranscription } from '../../../hooks/useTranscription'
-import { useQuestionDetector } from '../../../hooks/useQuestionDetector'
+import { useVoiceInput } from '../../../hooks/useVoiceInput'
+import type { VoiceState } from '../../../hooks/useVoiceInput'
 import { useAIAnswer } from '../../../hooks/useAIAnswer'
 import { useScreenCapture } from '../../../hooks/useScreenCapture'
 import { useOCR } from '../../../hooks/useOCR'
@@ -11,26 +11,78 @@ import type { QAPair, Settings } from '../../../types'
 interface UseLiveChatOptions {
   onLatestAnswer?: (answer: string) => void
   trackQuestion?: () => Promise<boolean>
-  canAskQuestion?: boolean
 }
 
-export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: UseLiveChatOptions = {}) {
-  const { transcript, finalTranscript, isTranscribing, error: transcriptionError, start: startTranscription, stop: stopTranscription } = useTranscription()
-  const { detectedQuestions } = useQuestionDetector(finalTranscript)
+export type { VoiceState }
+
+export function useLiveChat({ onLatestAnswer, trackQuestion }: UseLiveChatOptions = {}) {
+  const [transcriptionEngine, setTranscriptionEngine] = useState<'webspeech' | 'whisper'>('webspeech')
+  const [groqApiKey, setGroqApiKey] = useState<string>('')
+  const [audioDevice, setAudioDevice] = useState<string | undefined>(undefined)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+
+  // Load transcription settings once on mount
+  useEffect(() => {
+    window.electronAPI.getSettings().then((s: Settings) => {
+      const savedEngine = (s.transcriptionEngine as 'webspeech' | 'whisper') || 'webspeech'
+      const key = s.groqApiKey || ''
+      // In Electron, auto-use Whisper when API key is available (WebSpeech is unreliable in Electron)
+      const engine = !!window.electronAPI && key ? 'whisper' : savedEngine
+      setTranscriptionEngine(engine)
+      setGroqApiKey(key)
+      setAudioDevice(s.audioDevice && s.audioDevice !== 'default' ? s.audioDevice : undefined)
+      setSettingsLoaded(true)
+    }).catch(() => {
+      setSettingsLoaded(true)
+    })
+  }, [])
+
+  const [manualInput, setManualInput] = useState('')
+
+  // Push-to-record voice input: transcribed text goes into the input field
+  const { voiceState, error: voiceError, toggleVoice } = useVoiceInput({
+    engine: transcriptionEngine,
+    apiKey: groqApiKey,
+    deviceId: audioDevice,
+    // WebSpeech: append each recognized sentence live
+    onTranscript: useCallback((text: string) => {
+      setManualInput(prev => prev ? prev + ' ' + text : text)
+    }, []),
+    // Whisper: replace entire input with accurate full transcription on stop
+    onReplace: useCallback((text: string) => {
+      setManualInput(text)
+    }, []),
+  })
+
   const { askQuestion, answer, isStreaming, error: aiError } = useAIAnswer()
   const { captureScreen, screenshot, isCapturing, error: screenCaptureError } = useScreenCapture()
   const { processImage, ocrResult } = useOCR()
-  const { currentSession, startSession, endSession, addQAPair } = useSession()
+  const { addQAPair } = useSession()
 
   const [qaPairs, setQaPairs] = useState<QAPair[]>([])
-  const [manualInput, setManualInput] = useState('')
-  const [isActive, setIsActive] = useState(false)
   const [aiStatus, setAiStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
-  const processedQuestionsRef = useRef<Set<string>>(new Set())
   const currentQaPairIdRef = useRef<string | null>(null)
+  const generationRef = useRef(0)
+
+  // Derive configError from aiError
+  const configError = aiError?.includes('not configured') ? aiError : null
+
+  // Helper: add a limit-reached QA pair
+  const addLimitReachedPair = useCallback((question: string, source: 'audio' | 'manual' | 'ocr') => {
+    const id = crypto.randomUUID()
+    const pair: QAPair = {
+      id,
+      question,
+      answer: 'Daily question limit reached. Upgrade to Pro for unlimited questions.',
+      timestamp: Date.now(),
+      source,
+      isStreaming: false,
+    }
+    setQaPairs(prev => [...prev, pair])
+  }, [])
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -56,42 +108,15 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     checkAI()
   }, [])
 
-  // Process detected questions from audio
-  useEffect(() => {
-    if (!detectedQuestions || detectedQuestions.length === 0) return
-
-    const latest = detectedQuestions[detectedQuestions.length - 1]
-    const questionText = latest.text
-    if (processedQuestionsRef.current.has(latest.id)) return
-    processedQuestionsRef.current.add(latest.id)
-
-    ;(async () => {
-      if (trackQuestion) {
-        const allowed = await trackQuestion()
-        if (!allowed) return
-      }
-
-      const id = crypto.randomUUID()
-      currentQaPairIdRef.current = id
-      const newPair: QAPair = {
-        id,
-        question: questionText,
-        answer: '',
-        timestamp: Date.now(),
-        source: 'audio',
-        isStreaming: true,
-      }
-      setQaPairs(prev => [...prev, newPair])
-      askQuestion(questionText)
-    })()
-  }, [detectedQuestions, askQuestion, trackQuestion])
-
   // Stream answer updates
   useEffect(() => {
     const currentId = currentQaPairIdRef.current
     if (!currentId) return
 
+    const gen = generationRef.current
+
     if (aiError && !isStreaming) {
+      if (generationRef.current !== gen) return
       setQaPairs(prev =>
         prev.map(pair =>
           pair.id === currentId
@@ -104,6 +129,7 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
 
     if (!answer && isStreaming) return
 
+    if (generationRef.current !== gen) return
     setQaPairs(prev =>
       prev.map(pair =>
         pair.id === currentId
@@ -137,16 +163,21 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     if (!ocrResult || !ocrResult.text) return
 
     ;(async () => {
-      if (trackQuestion) {
-        const allowed = await trackQuestion()
-        if (!allowed) return
-      }
-
-      const id = crypto.randomUUID()
-      currentQaPairIdRef.current = id
       const question = ocrResult.isCodingProblem
         ? `Solve this coding problem:\n${ocrResult.text}`
         : ocrResult.text
+
+      if (trackQuestion) {
+        const allowed = await trackQuestion()
+        if (!allowed) {
+          addLimitReachedPair(question, 'ocr')
+          return
+        }
+      }
+
+      generationRef.current += 1
+      const id = crypto.randomUUID()
+      currentQaPairIdRef.current = id
 
       const newPair: QAPair = {
         id,
@@ -159,21 +190,7 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
       setQaPairs(prev => [...prev, newPair])
       askQuestion(question)
     })()
-  }, [ocrResult, askQuestion, trackQuestion])
-
-  const toggleListening = useCallback(async () => {
-    if (isActive) {
-      stopTranscription()
-      endSession()
-      setIsActive(false)
-    } else {
-      startSession()
-      const started = await startTranscription()
-      if (started) {
-        setIsActive(true)
-      }
-    }
-  }, [isActive, startTranscription, stopTranscription, startSession, endSession])
+  }, [ocrResult, askQuestion, trackQuestion, addLimitReachedPair])
 
   const handleManualSubmit = useCallback(async () => {
     const trimmed = manualInput.trim()
@@ -181,9 +198,14 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
 
     if (trackQuestion) {
       const allowed = await trackQuestion()
-      if (!allowed) return
+      if (!allowed) {
+        addLimitReachedPair(trimmed, 'manual')
+        setManualInput('')
+        return
+      }
     }
 
+    generationRef.current += 1
     const id = crypto.randomUUID()
     currentQaPairIdRef.current = id
     const newPair: QAPair = {
@@ -197,7 +219,7 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     setQaPairs(prev => [...prev, newPair])
     setManualInput('')
     askQuestion(trimmed)
-  }, [manualInput, askQuestion, trackQuestion])
+  }, [manualInput, askQuestion, trackQuestion, addLimitReachedPair])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -209,15 +231,15 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     [handleManualSubmit]
   )
 
-  // Wire up Cmd+Shift+S shortcut from main process
+  // Wire up Cmd+Shift+S shortcut to toggle voice input
   useEffect(() => {
     const cleanup = window.electronAPI.onShortcut((action: string) => {
       if (action === 'toggle-listening') {
-        toggleListening()
+        toggleVoice()
       }
     })
     return cleanup
-  }, [toggleListening])
+  }, [toggleVoice])
 
   const handleCopy = useCallback(
     (pair: QAPair) => {
@@ -230,6 +252,7 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
 
   const handleRegenerate = useCallback(
     (pair: QAPair) => {
+      generationRef.current += 1
       currentQaPairIdRef.current = pair.id
       setQaPairs(prev =>
         prev.map(p =>
@@ -241,17 +264,24 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     [askQuestion]
   )
 
+  const isActive = voiceState === 'listening'
+  const isTranscribing = voiceState === 'processing'
+
   return {
     // State
     qaPairs,
     manualInput,
+    voiceState,
+    voiceError,
     isActive,
+    isTranscribing,
+    transcriptionError: voiceError,
     aiStatus,
     copiedId,
-    isTranscribing,
     isCapturing,
     screenCaptureError,
-    transcriptionError,
+    settingsLoaded,
+    configError,
 
     // Refs
     chatEndRef,
@@ -260,7 +290,8 @@ export function useLiveChat({ onLatestAnswer, trackQuestion, canAskQuestion }: U
     setManualInput,
 
     // Handlers
-    toggleListening,
+    toggleVoice,
+    toggleListening: toggleVoice,
     handleManualSubmit,
     handleKeyDown,
     handleCopy,

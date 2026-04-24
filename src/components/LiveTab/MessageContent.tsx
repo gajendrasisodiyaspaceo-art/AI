@@ -63,8 +63,8 @@ export default memo(function MessageContent({ text }: { text: string }) {
                   fontSize: '12px',
                   lineHeight: '1.5',
                   borderRadius: '8px',
-                  background: 'rgba(0,0,0,0.5)',
-                  border: '1px solid rgba(255,255,255,0.04)',
+                  background: '#0A0A0B',
+                  border: '1px solid #2A2A2E',
                 }}
               >
                 {seg.content}

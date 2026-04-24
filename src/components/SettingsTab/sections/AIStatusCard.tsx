@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Card, StatusDot } from '../../common'
+import { StatusDot } from '../../common'
 import type { AIProvider } from '../../../types'
 
 interface AIStatusCardProps {
@@ -18,14 +18,14 @@ export default memo(function AIStatusCard({ aiStatus, provider }: AIStatusCardPr
   const providerLabel = provider === 'groq' ? 'Using Groq Cloud' : 'Using Ollama Local'
 
   return (
-    <Card>
+    <div className="rounded-lg p-3" style={{ background: '#141417' }}>
       <div className="flex items-center gap-2.5">
         <StatusDot status={dot} size="md" pulse={aiStatus === 'checking'} />
         <div>
-          <span className="text-sm font-medium text-white/90">{label}</span>
-          <p className="text-xs text-slate-400 mt-0.5">{providerLabel}</p>
+          <span className="text-[13px] font-medium text-white">{label}</span>
+          <p className="text-[11px] text-[#6B6B70] mt-0.5">{providerLabel}</p>
         </div>
       </div>
-    </Card>
+    </div>
   )
 })

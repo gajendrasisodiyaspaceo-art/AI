@@ -24,7 +24,8 @@ export default memo(function Card({
 }: CardProps) {
   return (
     <div
-      className={`${variant} rounded-xl ${paddingClasses[padding]} ${className}`.trim()}
+      className={`rounded-lg ${paddingClasses[padding]} ${className}`.trim()}
+      style={{ background: '#141417' }}
       {...rest}
     >
       {children}

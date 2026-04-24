@@ -1,24 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0a1a;
-  --bg-elevated: #111128;
-  --bg-surface: #1a1a2e;
-  --bg-card: #1e1e2e;
+  /* Spacing system */
+  --sp-page: 16px;       /* page-level padding (top, left, right, bottom) */
+  --sp-section: 16px;    /* gap between sections */
+  --sp-inner: 12px;      /* gap inside sections */
+  --sp-tight: 8px;       /* tight spacing */
+  --sp-xs: 4px;          /* micro spacing */
+
+  /* Colors */
+  --bg-primary: #0A0A0B;
+  --bg-elevated: #1A1A1D;
+  --bg-surface: #1F1F23;
+  --bg-card: #141417;
+  --bg-sidebar: #141417;
   --bg-glass: rgba(255, 255, 255, 0.04);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-active: rgba(124, 58, 237, 0.4);
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: rgba(255, 255, 255, 0.35);
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-light: #a78bfa;
-  --accent-glow: rgba(124, 58, 237, 0.15);
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --border-glass: #2A2A2E;
+  --border-subtle: #2A2A2E;
+  --border-active: rgba(139, 92, 246, 0.4);
+  --text-primary: #FFFFFF;
+  --text-secondary: #ADADB0;
+  --text-muted: #6B6B70;
+  --text-tertiary: #8B8B90;
+  --text-disabled: #4A4A4E;
+  --accent: #8B5CF6;
+  --accent-hover: #6D28D9;
+  --accent-light: #A78BFA;
+  --accent-glow: rgba(139, 92, 246, 0.15);
+  --cyan-accent: #22D3EE;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
 }
 
 * {
@@ -44,14 +56,14 @@ html, body, #root {
 /* Main app container */
 .app-shell {
   background: var(--bg-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-glass);
   min-width: 320px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.3),
     0 25px 60px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(124, 58, 237, 0.06);
+    0 0 40px rgba(139, 92, 246, 0.06);
 }
 
 /* Glass morphism */
@@ -64,13 +76,34 @@ html, body, #root {
 
 /* Elevated surface */
 .surface {
-  background: var(--bg-surface);
+  background: var(--bg-sidebar);
   border: 1px solid var(--border-glass);
 }
 
 /* Smooth transitions globally on interactive elements */
 button, input, select, a {
   transition: all 0.2s ease;
+}
+
+/* Input row focus-within glow */
+.input-row {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-row:focus-within {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+}
+
+/* Standalone input focus glow */
+.input-field:focus {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+}
+
+.input-field.input-error:focus {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
 }
 
 /* Scrollbar */
@@ -102,12 +135,12 @@ button, input, select, a {
 
 /* Custom select */
 select {
-  background-color: var(--bg-surface) !important;
+  background-color: var(--bg-sidebar) !important;
   color: var(--text-primary) !important;
 }
 
 select option {
-  background-color: var(--bg-elevated);
+  background-color: var(--bg-sidebar);
   color: var(--text-primary);
   padding: 8px;
 }
@@ -225,7 +258,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #A78BFA, #8B5CF6, #6366f1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

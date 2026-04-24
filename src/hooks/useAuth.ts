@@ -18,39 +18,57 @@ export function useAuth() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setState({ user, loading: false, error: null })
+    }).catch(() => {
+      setState({ user: null, loading: false, error: null })
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(prev => ({ ...prev, user: session?.user ?? null, loading: false }))
-    })
+    let sub: { unsubscribe: () => void } | null = null
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setState(prev => ({ ...prev, user: session?.user ?? null, loading: false }))
+      })
+      sub = subscription
+    } catch {
+      // Supabase unreachable
+    }
 
-    return () => subscription.unsubscribe()
+    return () => { sub?.unsubscribe() }
   }, [])
 
   const signUp = useCallback(async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) {
-      setState(prev => ({ ...prev, loading: false, error: formatAuthError(error) }))
+    try {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) {
+        setState(prev => ({ ...prev, loading: false, error: formatAuthError(error) }))
+        return false
+      }
+      setState(prev => ({ ...prev, loading: false }))
+      return true
+    } catch {
+      setState(prev => ({ ...prev, loading: false, error: 'Unable to connect. Please check your internet connection.' }))
       return false
     }
-    setState(prev => ({ ...prev, loading: false }))
-    return true
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setState(prev => ({ ...prev, loading: false, error: formatAuthError(error) }))
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setState(prev => ({ ...prev, loading: false, error: formatAuthError(error) }))
+        return false
+      }
+      setState(prev => ({ ...prev, loading: false }))
+      return true
+    } catch {
+      setState(prev => ({ ...prev, loading: false, error: 'Unable to connect. Please check your internet connection.' }))
       return false
     }
-    setState(prev => ({ ...prev, loading: false }))
-    return true
   }, [])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    try { await supabase.auth.signOut() } catch { /* ignore */ }
     setState({ user: null, loading: false, error: null })
   }, [])
 

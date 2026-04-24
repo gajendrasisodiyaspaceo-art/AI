@@ -1,7 +1,6 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Spinner } from '../common'
 import { useSettings } from './hooks/useSettings'
-import AccountSection from './sections/AccountSection'
 import AIStatusCard from './sections/AIStatusCard'
 import AIProviderSection from './sections/AIProviderSection'
 import APIKeySection from './sections/APIKeySection'
@@ -13,10 +12,11 @@ import StealthSection from './sections/StealthSection'
 import OpacitySection from './sections/OpacitySection'
 import ResumeSection from './sections/ResumeSection'
 import ShortcutsSection from './sections/ShortcutsSection'
+import AccountSection from './sections/AccountSection'
 import type { UserSubscription } from '../../types'
+import type { User } from '@supabase/supabase-js'
 
 interface SettingsTabProps {
-  userEmail: string
   subscription: {
     subscription: UserSubscription
     isPro: boolean
@@ -24,10 +24,14 @@ interface SettingsTabProps {
     openCheckout: () => Promise<void>
     openPortal: () => Promise<void>
   }
-  onLogout: () => Promise<void>
+  auth: {
+    user: User | null
+    isAuthenticated: boolean
+    signOut: () => Promise<void>
+  }
 }
 
-export default function SettingsTab({ userEmail, subscription: sub, onLogout }: SettingsTabProps) {
+export default function SettingsTab({ subscription: sub, auth }: SettingsTabProps) {
   const {
     settings,
     audioDevices,
@@ -73,16 +77,7 @@ export default function SettingsTab({ userEmail, subscription: sub, onLogout }: 
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
-      <AccountSection
-        email={userEmail}
-        subscription={sub.subscription}
-        isPro={sub.isPro}
-        error={sub.error}
-        onUpgrade={sub.openCheckout}
-        onManageSubscription={sub.openPortal}
-        onLogout={onLogout}
-      />
+    <div className="h-full overflow-y-auto" style={{ padding: 'var(--sp-page)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-section)' }}>
       <AIStatusCard aiStatus={aiStatus} provider={provider} />
       <AIProviderSection provider={provider} onChange={handleProviderChange} />
 
@@ -106,6 +101,17 @@ export default function SettingsTab({ userEmail, subscription: sub, onLogout }: 
       <OpacitySection opacity={settings.opacity} onChange={handleOpacityChange} />
       <ResumeSection resumePreview={resumePreview} onUpload={handleUploadResume} onDelete={handleDeleteResume} />
       <ShortcutsSection />
+
+      {/* Account & Subscription */}
+      <AccountSection
+        email={auth.user?.email || ''}
+        subscription={sub.subscription}
+        isPro={sub.isPro}
+        error={sub.error}
+        onUpgrade={sub.openCheckout}
+        onManageSubscription={sub.openPortal}
+        onLogout={auth.signOut}
+      />
     </div>
   )
 }

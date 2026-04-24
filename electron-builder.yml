@@ -6,25 +6,48 @@ directories:
 files:
   - dist-electron
   - dist
+
+# ─── macOS ────────────────────────────────────────────────────────────────────
 mac:
   target:
-    - dmg
+    - target: dmg
+      arch:
+        - arm64   # Apple Silicon
+        - x64     # Intel
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   hardenedRuntime: true
+  gatekeeperAssess: false
+  # Notarization is triggered automatically when these env vars are set:
+  #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
+  # Code signing: set CSC_LINK (path to .p12) and CSC_KEY_PASSWORD
   extendInfo:
     NSScreenCaptureUsageDescription: "InterviewAI needs screen recording access to capture your screen for OCR processing."
+    NSMicrophoneUsageDescription: "InterviewAI needs microphone access to transcribe interview questions in real time."
+
+dmg:
+  background: null
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# ─── Windows ─────────────────────────────────────────────────────────────────
 win:
   target:
-    - target: zip
-      arch:
-        - x64
     - target: nsis
       arch:
         - x64
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+# ─── Linux ───────────────────────────────────────────────────────────────────
 linux:
   target:
     - target: deb

@@ -10,23 +10,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode
 }
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    'bg-violet-600 hover:bg-violet-500 text-white shadow-sm shadow-violet-600/20 rounded-2xl',
-  secondary:
-    'bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/70 hover:text-white/80 rounded-2xl',
-  danger:
-    'bg-red-500/[0.06] hover:bg-red-500/15 border border-red-500/15 text-red-400/80 hover:text-red-400 rounded-2xl',
-  gradient:
-    'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm shadow-violet-600/25 rounded-2xl',
-}
-
-const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'text-sm px-3 py-1.5',
-  md: 'text-sm px-4 py-2',
-  lg: 'text-sm px-5 py-3',
-}
-
 export default memo(function Button({
   variant = 'primary',
   size = 'md',
@@ -35,20 +18,57 @@ export default memo(function Button({
   className = '',
   disabled,
   children,
+  style,
   ...rest
 }: ButtonProps) {
+  const baseStyle: React.CSSProperties = {
+    borderRadius: '12px',
+    fontWeight: 500,
+    fontSize: '13px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.35 : 1,
+    width: fullWidth ? '100%' : undefined,
+  }
+
+  const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
+    sm: { height: '32px', padding: '0 12px', fontSize: '12px' },
+    md: { height: '36px', padding: '0 16px', fontSize: '13px' },
+    lg: { height: '44px', padding: '0 20px', fontSize: '14px' },
+  }
+
+  const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
+    primary: {
+      background: 'var(--accent)',
+      color: '#fff',
+    },
+    secondary: {
+      background: 'var(--bg-surface)',
+      color: 'var(--text-secondary)',
+      border: '1px solid var(--border-glass)',
+    },
+    danger: {
+      background: 'rgba(239, 68, 68, 0.06)',
+      color: 'rgba(239, 68, 68, 0.8)',
+      border: '1px solid rgba(239, 68, 68, 0.15)',
+    },
+    gradient: {
+      background: 'linear-gradient(180deg, #9061F9, #7C3AED)',
+      color: '#fff',
+      boxShadow: '0 4px 16px rgba(139, 92, 246, 0.30), 0 1px 2px rgba(0, 0, 0, 0.2)',
+      fontWeight: 600,
+    },
+  }
+
   return (
     <button
-      className={`
-        ${variantClasses[variant]}
-        ${sizeClasses[size]}
-        ${fullWidth ? 'w-full' : ''}
-        font-medium transition-all
-        disabled:opacity-30 disabled:cursor-not-allowed
-        flex items-center justify-center gap-1.5
-        ${className}
-      `.trim().replace(/\s+/g, ' ')}
+      className={`${variant === 'primary' ? 'hover:bg-[#7C3AED]' : ''} ${variant === 'secondary' ? 'hover:bg-[#2A2A2E] hover:text-white' : ''} ${variant === 'danger' ? 'hover:bg-red-500/15 hover:text-red-400' : ''} active:scale-[0.98] ${className}`}
       disabled={disabled}
+      style={{ ...baseStyle, ...sizeStyles[size], ...variantStyles[variant], ...style }}
       {...rest}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}

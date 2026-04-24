@@ -44,13 +44,13 @@ export default memo(function APIKeySection({ apiKey, showApiKey, onChange, onTog
           </button>
         }
       />
-      <p className="text-xs text-white/30 px-0.5">
+      <p className="text-[11px] text-[#4A4A4E] px-0.5">
         Free key from{' '}
         <a
           href="https://console.groq.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-violet-400/70 hover:text-violet-400 transition-colors"
+          className="text-[#22D3EE] hover:text-[#22D3EE]/80 transition-colors"
           onClick={(e) => {
             e.preventDefault()
             window.open('https://console.groq.com', '_blank')

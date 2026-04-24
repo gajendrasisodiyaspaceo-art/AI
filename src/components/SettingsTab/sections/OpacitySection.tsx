@@ -12,10 +12,10 @@ export default memo(function OpacitySection({ opacity, onChange }: OpacitySectio
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between px-0.5">
-        <label className="text-xs font-medium text-white/35 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-[#6B6B70] uppercase tracking-[1px]">
           Opacity
         </label>
-        <span className="text-xs font-medium text-white/90">{percent}%</span>
+        <span className="text-xs font-medium text-white">{percent}%</span>
       </div>
       <div className="relative">
         <input

@@ -4,8 +4,8 @@ import TabBar from './components/TabBar/TabBar'
 import { Spinner, ErrorBoundary } from './components/common'
 import MiniMode from './components/MiniMode/MiniMode'
 import AuthScreen from './components/AuthScreen/AuthScreen'
-import { useAuth } from './hooks/useAuth'
 import { useSubscription } from './hooks/useSubscription'
+import { useAuth } from './hooks/useAuth'
 
 const LiveTab = lazy(() => import('./components/LiveTab/LiveTab'))
 const SettingsTab = lazy(() => import('./components/SettingsTab/SettingsTab'))
@@ -23,8 +23,8 @@ function TabFallback() {
 }
 
 function App() {
-  const { user, loading: authLoading, error: authError, isAuthenticated, signIn, signUp, signOut, clearError } = useAuth()
   const subscriptionState = useSubscription()
+  const auth = useAuth()
 
   const [activeTab, setActiveTab] = useState<TabId>('live')
   const [hasCompletedSetup, setHasCompletedSetup] = useState<boolean | null>(null)
@@ -32,7 +32,6 @@ function App() {
   const [latestAnswer, setLatestAnswer] = useState('')
 
   useEffect(() => {
-    if (!isAuthenticated) return
     const checkSetup = async () => {
       try {
         const settings = await window.electronAPI.getSettings()
@@ -42,7 +41,7 @@ function App() {
       }
     }
     checkSetup()
-  }, [isAuthenticated])
+  }, [])
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.onShortcut((action: string) => {
@@ -72,26 +71,7 @@ function App() {
     window.electronAPI.setMiniMode(false)
   }, [])
 
-  if (authLoading) {
-    return (
-      <div className="h-full w-full rounded-xl overflow-hidden app-shell flex items-center justify-center">
-        <Spinner size="md" label="Loading..." />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <AuthScreen
-        onSignIn={signIn}
-        onSignUp={signUp}
-        error={authError}
-        loading={authLoading}
-        onClearError={clearError}
-      />
-    )
-  }
-
+  // Loading setup status
   if (hasCompletedSetup === null) {
     return (
       <div className="h-full w-full rounded-xl overflow-hidden app-shell flex items-center justify-center">
@@ -100,6 +80,7 @@ function App() {
     )
   }
 
+  // Setup wizard
   if (!hasCompletedSetup) {
     return (
       <div className="h-full w-full rounded-xl overflow-hidden app-shell">
@@ -112,6 +93,23 @@ function App() {
     )
   }
 
+  // Auth gate — must sign in before using the app
+  if (!auth.loading && !auth.isAuthenticated) {
+    return (
+      <div className="h-full w-full rounded-xl overflow-hidden app-shell">
+        <TitleBar />
+        <AuthScreen
+          onSignIn={auth.signIn}
+          onSignUp={auth.signUp}
+          error={auth.error}
+          loading={auth.loading}
+          onClearError={auth.clearError}
+        />
+      </div>
+    )
+  }
+
+  // Mini mode
   if (isMiniMode) {
     return (
       <MiniMode
@@ -122,6 +120,7 @@ function App() {
     )
   }
 
+  // Main app
   return (
     <div className="h-full w-full rounded-xl overflow-hidden app-shell flex flex-col">
       <TitleBar />
@@ -137,9 +136,8 @@ function App() {
             )}
             {activeTab === 'settings' && (
               <SettingsTab
-                userEmail={user?.email || ''}
                 subscription={subscriptionState}
-                onLogout={signOut}
+                auth={auth}
               />
             )}
             {activeTab === 'history' && <HistoryTab />}

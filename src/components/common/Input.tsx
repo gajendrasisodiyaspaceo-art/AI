@@ -13,35 +13,53 @@ export default memo(
     ref
   ) {
     return (
-      <div className="space-y-1.5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {label && (
-          <label className="text-xs font-medium text-white/35 uppercase tracking-wider px-0.5">
+          <label
+            className="font-medium uppercase"
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              letterSpacing: '0.05em',
+              paddingLeft: '2px',
+            }}
+          >
             {label}
           </label>
         )}
         <div className="relative">
           <input
             ref={ref}
-            className={`
-              w-full bg-white/[0.04] border rounded-lg px-3 py-2 text-sm text-white
-              placeholder-white/25 outline-none transition-colors
-              ${error ? 'border-red-500/40 focus:border-red-500/60' : 'border-white/[0.08] focus:border-violet-500/40'}
-              ${rightElement ? 'pr-10' : ''}
-              ${className}
-            `.trim().replace(/\s+/g, ' ')}
+            className={`input-field w-full outline-none ${error ? 'input-error' : ''} ${rightElement ? 'pr-10' : ''} ${className}`}
+            style={{
+              height: '44px',
+              borderRadius: '12px',
+              padding: '0 14px',
+              fontSize: '13px',
+              color: 'var(--text-primary)',
+              background: 'var(--bg-card)',
+              border: error
+                ? '1px solid rgba(239, 68, 68, 0.35)'
+                : '1px solid var(--border-glass)',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+            }}
             {...rest}
           />
           {rightElement && (
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
               {rightElement}
             </div>
           )}
         </div>
         {error && (
-          <p className="text-xs text-red-400/80 px-0.5">{error}</p>
+          <p style={{ fontSize: '11px', color: 'var(--danger)', paddingLeft: '2px' }}>
+            {error}
+          </p>
         )}
         {helperText && !error && (
-          <p className="text-xs text-white/30 px-0.5">{helperText}</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-disabled)', paddingLeft: '2px' }}>
+            {helperText}
+          </p>
         )}
       </div>
     )

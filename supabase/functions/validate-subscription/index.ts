@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     // Get user's subscription from DB
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('plan, status, stripe_subscription_id')
+      .select('plan, status, stripe_subscription_id, cancel_at_period_end')
       .eq('user_id', user.id)
       .single()
 
@@ -89,11 +89,31 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Subscription is valid — return current state
+    // Subscription is valid — sync cancel_at_period_end and period end from Stripe
+    // This catches cancellations that the webhook might have missed
+    const cancelAtPeriodEnd = stripeSub.cancel_at_period_end ?? false
+    const items = stripeSub.items as { data?: Array<Record<string, unknown>> } | undefined
+    const firstItem = items?.data?.[0]
+    const periodEnd = (stripeSub.current_period_end || firstItem?.current_period_end) as number | undefined
+    const periodEndIso = periodEnd ? new Date(periodEnd * 1000).toISOString() : null
+
+    // Update DB if cancel_at_period_end changed
+    if (cancelAtPeriodEnd !== sub.cancel_at_period_end) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          cancel_at_period_end: cancelAtPeriodEnd,
+          current_period_end: periodEndIso,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+    }
+
     return new Response(JSON.stringify({
       plan: 'pro',
       status: stripeSub.status,
       valid: true,
+      cancelAtPeriodEnd,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

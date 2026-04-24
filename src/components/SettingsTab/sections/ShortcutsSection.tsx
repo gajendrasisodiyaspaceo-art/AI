@@ -1,5 +1,4 @@
 import { memo } from 'react'
-import { Card } from '../../common'
 
 const shortcuts = [
   ['Toggle Listening', 'Cmd+Shift+S'],
@@ -10,18 +9,16 @@ const shortcuts = [
 
 export default memo(function ShortcutsSection() {
   return (
-    <Card className="space-y-2">
-      <span className="text-xs font-medium text-white/70">Keyboard Shortcuts</span>
-      <div className="text-xs space-y-1.5">
+    <div className="space-y-3">
+      <span className="text-[13px] font-semibold text-white">Keyboard Shortcuts</span>
+      <div className="space-y-2">
         {shortcuts.map(([label, shortcut]) => (
           <div key={label} className="flex items-center justify-between">
-            <span className="text-white/40">{label}</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/60 font-mono text-xs">
-              {shortcut}
-            </kbd>
+            <span className="text-xs text-[#ADADB0]">{label}</span>
+            <span className="text-[11px] font-medium text-[#6B6B70]">{shortcut}</span>
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   )
 })

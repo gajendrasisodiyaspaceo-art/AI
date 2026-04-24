@@ -56,22 +56,40 @@ export default function AuthScreen({ onSignIn, onSignUp, error, loading, onClear
 
   const displayError = localError || error
 
+  // Signup success screen
   if (signupSuccess) {
     return (
-      <div className="h-full w-full rounded-xl overflow-hidden app-shell flex flex-col items-center justify-center p-8">
-        <div className="w-full max-w-xs space-y-6 text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <div className="h-full w-full rounded-xl overflow-hidden app-shell flex items-center justify-center animate-fade-in">
+        <div style={{ width: '100%', maxWidth: '296px', padding: '0 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+          {/* Success icon */}
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: 'rgba(34, 197, 94, 0.10)',
+              border: '1px solid rgba(34, 197, 94, 0.20)',
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-white/70">Check your email</h2>
-            <p className="text-xs text-white/40 mt-2">
-              We sent a confirmation link to <span className="text-violet-400">{email}</span>. Click the link to activate your account.
+
+          {/* Text */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Check your email
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+              We sent a confirmation link to{' '}
+              <span style={{ color: 'var(--accent)' }}>{email}</span>.
+              Click the link to activate your account.
             </p>
           </div>
-          <Button variant="secondary" fullWidth onClick={toggleMode}>
+
+          <Button variant="secondary" fullWidth size="lg" onClick={toggleMode}>
             Back to Login
           </Button>
         </div>
@@ -80,23 +98,40 @@ export default function AuthScreen({ onSignIn, onSignUp, error, loading, onClear
   }
 
   return (
-    <div className="h-full w-full rounded-xl overflow-hidden app-shell flex flex-col items-center justify-center p-8">
-      <div className="w-full max-w-xs space-y-6">
-        <div className="text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-600/20">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round">
+    <div className="h-full w-full rounded-xl overflow-hidden app-shell flex items-center justify-center animate-fade-in">
+      <div style={{ width: '100%', maxWidth: '296px', padding: '0 32px' }}>
+
+        {/* Logo section */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+          {/* Icon */}
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+              boxShadow: '0 8px 24px rgba(139, 92, 246, 0.25), 0 2px 8px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
             </svg>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-white/80">InterviewAI</h1>
-            <p className="text-xs text-white/40 mt-1">
+
+          {/* Text */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              InterviewAI
+            </h1>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
             label="Email"
             type="email"
@@ -108,7 +143,7 @@ export default function AuthScreen({ onSignIn, onSignUp, error, loading, onClear
           <Input
             label="Password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Enter your password"
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
@@ -116,15 +151,27 @@ export default function AuthScreen({ onSignIn, onSignUp, error, loading, onClear
             <Input
               label="Confirm Password"
               type="password"
-              placeholder="••••••••"
+              placeholder="Confirm your password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
             />
           )}
 
+          {/* Error banner */}
           {displayError && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div
+              className="flex items-center"
+              style={{
+                gap: '8px',
+                padding: '10px 12px',
+                borderRadius: '12px',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+                fontSize: '12px',
+                color: '#f87171',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -133,22 +180,42 @@ export default function AuthScreen({ onSignIn, onSignUp, error, loading, onClear
             </div>
           )}
 
-          <Button
-            type="submit"
-            variant="gradient"
-            fullWidth
-            size="lg"
-            disabled={loading}
-          >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-          </Button>
+          {/* Submit button */}
+          <div style={{ marginTop: '8px' }}>
+            <Button
+              type="submit"
+              variant="gradient"
+              fullWidth
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            </Button>
+          </div>
         </form>
 
-        <p className="text-center text-xs text-white/35">
+        {/* Footer toggle */}
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            marginTop: '24px',
+          }}
+        >
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={toggleMode}
-            className="text-violet-400 hover:text-violet-300 transition-colors"
+            className="hover:underline"
+            style={{
+              color: 'var(--accent-light)',
+              fontWeight: 500,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: 'inherit',
+            }}
           >
             {mode === 'login' ? 'Sign Up' : 'Sign In'}
           </button>

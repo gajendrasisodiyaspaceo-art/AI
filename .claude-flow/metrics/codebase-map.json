@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-25T12:35:23.483Z",
+  "projectRoot": "/Users/sotsys380/Desktop/Projects/Desktop app",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1774442123484
+}
